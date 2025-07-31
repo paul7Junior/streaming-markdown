@@ -1614,7 +1614,11 @@ export function default_end_token(data) {
 
 /** @type {Default_Renderer_Add_Text} */
 export function default_add_text(data, text) {
-    data.nodes[data.index].appendChild(document.createTextNode(text))
+    const span = document.createElement("span");
+    span.textContent = text;
+    span.className = 'fade-in';
+    data.nodes[data.index].appendChild(span);
+    // data.nodes[data.index].appendChild(document.createTextNode(text))
 }
 
 /** @type {Default_Renderer_Set_Attr} */
