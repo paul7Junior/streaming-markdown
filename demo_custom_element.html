@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Element Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .my-custom-span {
+            background-color: #e7f3ff;
+            border: 2px solid #2196F3;
+            border-radius: 4px;
+            padding: 2px 8px;
+            color: #0066cc;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .my-custom-span:hover {
+            background-color: #cce5ff;
+        }
+        #input {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        #output {
+            border: 1px solid #ccc;
+            padding: 20px;
+            min-height: 100px;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Custom Element Renderer Demo</h1>
+    <p>The custom element format is: <code>££name::url££</code></p>
+
+    <h2>Input Markdown:</h2>
+    <textarea id="input">
+This is a demo of the custom element renderer.
+
+You can create custom elements like ££GitHub::https://github.com££ or ££Example Site::https://example.com££.
+
+They render as <span class="my-custom-span"> elements with data-name and href attributes.
+
+Try editing the markdown above!
+    </textarea>
+
+    <h2>Rendered Output:</h2>
+    <div id="output"></div>
+
+    <script type="module">
+        import * as smd from './smd.js';
+
+        const input = document.getElementById('input');
+        const output = document.getElementById('output');
+
+        function render() {
+            output.innerHTML = '';
+            const renderer = smd.default_renderer(output);
+            const parser = smd.parser(renderer);
+            smd.parser_write(parser, input.value);
+            smd.parser_end(parser);
+
+            // Add click handlers to custom elements to navigate to their URLs
+            output.querySelectorAll('.my-custom-span').forEach(span => {
+                const href = span.getAttribute('href');
+                const name = span.getAttribute('data-name');
+                if (href) {
+                    span.textContent = name || href;
+                    span.addEventListener('click', () => {
+                        window.open(href, '_blank');
+                    });
+                    span.title = `Click to visit: ${href}`;
+                }
+            });
+        }
+
+        input.addEventListener('input', render);
+        render();
+    </script>
+</body>
+</html>

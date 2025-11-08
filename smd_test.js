@@ -2052,3 +2052,37 @@ test_single_write("Escaped dollar sign",
         children: ["$foo$"]
     }]
 )
+
+test_single_write("Custom element",
+    "££example::https://example.com££",
+    [{
+        type: smd.Token.Paragraph,
+        children: [{
+            type: smd.Token.Custom_Element,
+            children: [],
+            attrs: {
+                [smd.Attr.Href]: "https://example.com",
+                [smd.Attr.Name]: "example"
+            }
+        }]
+    }]
+)
+
+test_single_write("Custom element in paragraph",
+    "Hello ££world::https://world.com££ there",
+    [{
+        type: smd.Token.Paragraph,
+        children: [
+            "Hello ",
+            {
+                type: smd.Token.Custom_Element,
+                children: [],
+                attrs: {
+                    [smd.Attr.Href]: "https://world.com",
+                    [smd.Attr.Name]: "world"
+                }
+            },
+            " there"
+        ]
+    }]
+)
