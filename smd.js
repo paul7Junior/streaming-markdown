@@ -37,6 +37,7 @@ export const
     TABLE_CELL      = 29,
     EQUATION_BLOCK  = 30,
     EQUATION_INLINE = 31,
+    CUSTOM_ELEMENT  = 32,
     NEWLINE         = 101,
     MAYBE_URL       = 102,
     MAYBE_TASK      = 103,
@@ -76,6 +77,7 @@ export const Token = /** @type {const} */({
     Table_Cell:     TABLE_CELL,
     Equation_Block: EQUATION_BLOCK,
     Equation_Inline:EQUATION_INLINE,
+    Custom_Element: CUSTOM_ELEMENT,
 })
 
 /**
@@ -114,6 +116,7 @@ export function token_to_string(type) {
     case TABLE_CELL:     return "Table_Cell"
     case EQUATION_BLOCK: return "Equation_Block"
     case EQUATION_INLINE:return "Equation_Inline"
+    case CUSTOM_ELEMENT: return "Custom_Element"
     }
 }
 
@@ -122,7 +125,8 @@ export const
     SRC     = 2,
     LANG    = 4,
     CHECKED = 8,
-    START   = 16
+    START   = 16,
+    NAME    = 32
 
 /** @enum {(typeof Attr)[keyof typeof Attr]} */
 export const Attr = /** @type {const} */({
@@ -131,6 +135,7 @@ export const Attr = /** @type {const} */({
     Lang   : LANG,
     Checked: CHECKED,
     Start  : START,
+    Name   : NAME,
 })
 
 /**
@@ -143,6 +148,7 @@ export function attr_to_html_attr(type) {
     case LANG:    return "class"
     case CHECKED: return "checked"
     case START:   return "start"
+    case NAME:    return "data-name"
     }
 }
 
@@ -1061,6 +1067,30 @@ export function parser_write(p, chunk) {
                 continue
             }
             break
+        case CUSTOM_ELEMENT:
+            if (pending_with_char.endsWith("££")) {
+                // Parse name::url from accumulated pending
+                const content = p.pending.slice(0, -1) // Remove the first '£' from '...£'
+                const separator_index = content.indexOf("::")
+                if (separator_index !== -1) {
+                    const name = content.slice(0, separator_index)
+                    const url = content.slice(separator_index + 2)
+                    p.renderer.set_attr(p.renderer.data, NAME, name)
+                    p.renderer.set_attr(p.renderer.data, HREF, url)
+                }
+                // Don't call add_text - we don't want the content as children
+                end_token(p)
+                p.pending = ""
+                continue
+            }
+            // Accumulate all characters into p.pending (not p.text)
+            if (char !== '£') {
+                p.pending += char
+                continue
+            }
+            // char is '£', let it be added to pending for the closing check
+            p.pending += char
+            continue
         case MAYBE_EQ_BLOCK:
             /*
              \[?  or  $$?
@@ -1377,6 +1407,32 @@ export function parser_write(p, chunk) {
                 }
             }
             break
+        /* ££name::url££ */
+        case '£':
+            if (p.token !== IMAGE &&
+                p.token !== CUSTOM_ELEMENT
+            ) {
+                if ("£" === p.pending) {
+                    /* ££name::url££
+                        ^
+                    */
+                    if ('£' === char) {
+                        p.pending = pending_with_char
+                        continue
+                    }
+                } else {
+                    /* ££name::url££
+                    |    ^
+                    */
+                    if (' ' !== char && '\n' !== char) {
+                        add_text(p)
+                        add_token(p, CUSTOM_ELEMENT)
+                        p.pending = char
+                        continue
+                    }
+                }
+            }
+            break
         /* $eq$ | $$eq$$ */
         case '$':
             if (p.token !== IMAGE &&
@@ -1602,6 +1658,10 @@ export function default_add_token(data, type) {
         break
     case EQUATION_BLOCK:  slot = document.createElement("equation-block"); break
     case EQUATION_INLINE: slot = document.createElement("equation-inline"); break
+    case CUSTOM_ELEMENT:
+        slot = document.createElement("span")
+        slot.className = "my-custom-span"
+        break
     }
 
     data.nodes[++data.index] = parent.appendChild(slot)
