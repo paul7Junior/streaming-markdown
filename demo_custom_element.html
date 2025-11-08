@@ -55,23 +55,45 @@ Try editing the markdown above!
     <h2>Rendered Output:</h2>
     <div id="output"></div>
 
+    <h2>Debug Info:</h2>
+    <pre id="debug" style="background: #f0f0f0; padding: 10px; font-size: 12px; max-height: 300px; overflow: auto;"></pre>
+
     <script type="module">
         import * as smd from './smd.js';
 
         const input = document.getElementById('input');
         const output = document.getElementById('output');
+        const debug = document.getElementById('debug');
+
+        // Capture console.log for debugging
+        const originalLog = console.log;
+        let logMessages = [];
+        console.log = function(...args) {
+            logMessages.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+            originalLog.apply(console, args);
+        };
 
         function render() {
+            logMessages = [];
             output.innerHTML = '';
+
+            console.log("=== Starting render ===");
             const renderer = smd.default_renderer(output);
             const parser = smd.parser(renderer);
             smd.parser_write(parser, input.value);
             smd.parser_end(parser);
+            console.log("=== Render complete ===");
+
+            // Display debug info
+            debug.textContent = logMessages.join('\n');
 
             // Add click handlers to custom elements to navigate to their URLs
-            output.querySelectorAll('.my-custom-span').forEach(span => {
+            const customSpans = output.querySelectorAll('.my-custom-span');
+            console.log("Found", customSpans.length, "custom span(s)");
+            customSpans.forEach((span, i) => {
                 const href = span.getAttribute('href');
                 const name = span.getAttribute('data-name');
+                console.log(`Custom span ${i}: name="${name}", href="${href}"`);
                 if (href) {
                     span.textContent = name || href;
                     span.addEventListener('click', () => {
@@ -80,6 +102,10 @@ Try editing the markdown above!
                     span.title = `Click to visit: ${href}`;
                 }
             });
+
+            // Display final HTML
+            console.log("=== Final HTML ===");
+            console.log(output.innerHTML);
         }
 
         input.addEventListener('input', render);

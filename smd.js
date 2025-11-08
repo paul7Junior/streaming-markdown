@@ -1068,27 +1068,35 @@ export function parser_write(p, chunk) {
             }
             break
         case CUSTOM_ELEMENT:
+            console.log("CUSTOM_ELEMENT case: pending =", JSON.stringify(p.pending), ", char =", JSON.stringify(char), ", pending_with_char =", JSON.stringify(pending_with_char))
             if (pending_with_char.endsWith("££")) {
+                console.log("  -> Found closing ££, parsing content")
                 // Parse name::url from accumulated pending
                 const content = p.pending.slice(0, -1) // Remove the first '£' from '...£'
+                console.log("  -> content =", JSON.stringify(content))
                 const separator_index = content.indexOf("::")
+                console.log("  -> separator_index =", separator_index)
                 if (separator_index !== -1) {
                     const name = content.slice(0, separator_index)
                     const url = content.slice(separator_index + 2)
+                    console.log("  -> Setting attributes: name =", JSON.stringify(name), ", url =", JSON.stringify(url))
                     p.renderer.set_attr(p.renderer.data, NAME, name)
                     p.renderer.set_attr(p.renderer.data, HREF, url)
                 }
                 // Don't call add_text - we don't want the content as children
+                console.log("  -> Ending CUSTOM_ELEMENT token")
                 end_token(p)
                 p.pending = ""
                 continue
             }
             // Accumulate all characters into p.pending (not p.text)
             if (char !== '£') {
+                console.log("  -> Accumulating char into pending")
                 p.pending += char
                 continue
             }
             // char is '£', let it be added to pending for the closing check
+            console.log("  -> Found £, adding to pending for closing check")
             p.pending += char
             continue
         case MAYBE_EQ_BLOCK:
@@ -1409,6 +1417,7 @@ export function parser_write(p, chunk) {
             break
         /* ££name::url££ */
         case '£':
+            console.log("£ case: token =", token_to_string(p.token), ", pending =", JSON.stringify(p.pending), ", char =", JSON.stringify(char), ", pending_with_char =", JSON.stringify(pending_with_char))
             if (p.token !== IMAGE &&
                 p.token !== CUSTOM_ELEMENT
             ) {
@@ -1416,15 +1425,19 @@ export function parser_write(p, chunk) {
                     /* ££name::url££
                         ^
                     */
+                    console.log("  -> Found first £, checking if next char is also £")
                     if ('£' === char) {
+                        console.log("  -> Yes! Found ££, updating pending and continuing")
                         p.pending = pending_with_char
                         continue
                     }
-                } else {
+                } else if ("££" === p.pending) {
                     /* ££name::url££
                     |    ^
                     */
+                    console.log("  -> Found ££ in pending, next char is", JSON.stringify(char))
                     if (' ' !== char && '\n' !== char) {
+                        console.log("  -> Starting CUSTOM_ELEMENT token")
                         add_text(p)
                         add_token(p, CUSTOM_ELEMENT)
                         p.pending = char
@@ -1432,6 +1445,7 @@ export function parser_write(p, chunk) {
                     }
                 }
             }
+            console.log("  -> Breaking from £ case")
             break
         /* $eq$ | $$eq$$ */
         case '$':
@@ -1504,10 +1518,12 @@ export function parser_write(p, chunk) {
             p.token !== LINK &&
             p.token !== EQUATION_BLOCK &&
             p.token !== EQUATION_INLINE &&
+            p.token !== CUSTOM_ELEMENT &&
             'h' === char &&
            (" " === p.pending ||
             ""  === p.pending)
         ) {
+            console.log("MAYBE_URL: Starting URL detection")
             p.text   += p.pending
             p.pending = char
 
@@ -1518,6 +1534,7 @@ export function parser_write(p, chunk) {
         /*
         No check hit
         */
+        console.log("No check hit: token =", token_to_string(p.token), ", pending =", JSON.stringify(p.pending), ", char =", JSON.stringify(char))
         p.text += p.pending
         p.pending = char
     }
@@ -1598,6 +1615,7 @@ export function default_renderer(root) {
 
 /** @type {Default_Renderer_Add_Token} */
 export function default_add_token(data, type) {
+    console.log(">>> default_add_token called with type:", token_to_string(type))
 
     /**@type {Element}*/ let parent = data.nodes[data.index]
 
@@ -1659,12 +1677,17 @@ export function default_add_token(data, type) {
     case EQUATION_BLOCK:  slot = document.createElement("equation-block"); break
     case EQUATION_INLINE: slot = document.createElement("equation-inline"); break
     case CUSTOM_ELEMENT:
+        console.log("  -> Creating span.my-custom-span for CUSTOM_ELEMENT")
         slot = document.createElement("span")
         slot.className = "my-custom-span"
+        console.log("  -> Created element:", slot.tagName, "with class:", slot.className)
         break
     }
 
-    data.nodes[++data.index] = parent.appendChild(slot)
+    if (slot) {
+        console.log("  -> Appending", slot.tagName, "to parent")
+        data.nodes[++data.index] = parent.appendChild(slot)
+    }
 }
 
 /** @type {Default_Renderer_End_Token} */
@@ -1683,7 +1706,9 @@ export function default_add_text(data, text) {
 
 /** @type {Default_Renderer_Set_Attr} */
 export function default_set_attr(data, type, value) {
-    data.nodes[data.index].setAttribute(attr_to_html_attr(type), value)
+    const attrName = attr_to_html_attr(type)
+    console.log(">>> default_set_attr:", attrName, "=", value, "on element:", data.nodes[data.index]?.tagName)
+    data.nodes[data.index].setAttribute(attrName, value)
 }
 
 
