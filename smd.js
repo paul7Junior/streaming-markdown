@@ -1082,8 +1082,15 @@ export function parser_write(p, chunk) {
                     console.log("  -> Setting attributes: name =", JSON.stringify(name), ", url =", JSON.stringify(url))
                     p.renderer.set_attr(p.renderer.data, NAME, name)
                     p.renderer.set_attr(p.renderer.data, HREF, url)
+                    // Add the name as visible text content
+                    p.text = name
+                    console.log("  -> Adding name as text content:", JSON.stringify(name))
+                } else {
+                    // No separator found, use the whole content as text
+                    p.text = content
+                    console.log("  -> No separator found, adding full content as text:", JSON.stringify(content))
                 }
-                // Don't call add_text - we don't want the content as children
+                add_text(p)
                 console.log("  -> Ending CUSTOM_ELEMENT token")
                 end_token(p)
                 p.pending = ""

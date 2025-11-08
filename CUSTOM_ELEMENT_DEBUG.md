@@ -19,12 +19,14 @@ The custom element feature adds support for `££name::url££` syntax in markdo
 - Does NOT call `add_text()` to avoid creating text children
 - Detects closing `££` pattern using `.endsWith("££")`
 
-### 3. **Parsing & Attributes** (smd.js lines 1072-1090)
+### 3. **Parsing & Attributes** (smd.js lines 1072-1097)
 - When closing `££` is found:
   - Extracts content from `p.pending.slice(0, -1)` (removes trailing '£')
   - Splits on `::` to get name and url
   - Calls `p.renderer.set_attr()` for both NAME and HREF attributes
-  - Calls `end_token()` without calling `add_text()`
+  - Sets `p.text = name` to add the name as visible text content
+  - Calls `add_text()` to render the name inside the span
+  - Calls `end_token()` to close the custom element
 
 ### 4. **HTML Rendering** (smd.js lines 1679-1684)
 - `default_add_token()` creates `<span class="my-custom-span">`
@@ -77,16 +79,20 @@ Check out ££GitHub::https://github.com££ for more info.
 2. `CUSTOM_ELEMENT case:` for each character in "GitHub::https://github.com"
 3. `Found closing ££, parsing content`
 4. `Setting attributes: name = "GitHub" , url = "https://github.com"`
-5. `default_add_token called with type: Custom_Element`
-6. `Creating span.my-custom-span`
-7. `default_set_attr: data-name = GitHub`
-8. `default_set_attr: href = https://github.com`
+5. `Adding name as text content: "GitHub"`
+6. `default_add_token called with type: Custom_Element`
+7. `Creating span.my-custom-span`
+8. `default_set_attr: data-name = GitHub`
+9. `default_set_attr: href = https://github.com`
+10. `add_text: "GitHub"` (the name is added as visible text)
 
 ### HTML Output:
 ```html
 <p>
   <span class="fade-in">Check out </span>
-  <span class="my-custom-span" data-name="GitHub" href="https://github.com"></span>
+  <span class="my-custom-span" data-name="GitHub" href="https://github.com">
+    <span class="fade-in">GitHub</span>
+  </span>
   <span class="fade-in"> for more info.</span>
 </p>
 ```
@@ -110,6 +116,20 @@ Check out ££GitHub::https://github.com££ for more info.
 - `add_text()` is being called during accumulation
 - Check logs for "No check hit" during CUSTOM_ELEMENT processing
 - Verify CUSTOM_ELEMENT is excluded from other token checks
+
+### Issue 4: Span is styled but empty (no visible text) - FIXED ✅
+**Symptom:**
+- When content is streamed, the custom element span appears with correct styling but no visible text
+- Works fine when content is provided all at once
+
+**Root Cause:**
+- The parser was setting attributes correctly but not adding the name as text content
+- The demo HTML had manual post-processing (`span.textContent = name`) which worked for batch rendering but not streaming
+
+**Fix:**
+- Now automatically adds the name as text content during parsing
+- Sets `p.text = name` before calling `add_text(p)`
+- No manual post-processing needed - works for both streaming and batch rendering
 
 ## Key Code Changes
 

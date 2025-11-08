@@ -93,9 +93,9 @@ Try editing the markdown above!
             customSpans.forEach((span, i) => {
                 const href = span.getAttribute('href');
                 const name = span.getAttribute('data-name');
-                console.log(`Custom span ${i}: name="${name}", href="${href}"`);
+                console.log(`Custom span ${i}: name="${name}", href="${href}", text="${span.textContent}"`);
                 if (href) {
-                    span.textContent = name || href;
+                    // Note: textContent is now automatically set by the parser (no manual setting needed)
                     span.addEventListener('click', () => {
                         window.open(href, '_blank');
                     });
