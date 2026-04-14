@@ -1068,7 +1068,6 @@ export function parser_write(p, chunk) {
             }
             break
         case CUSTOM_ELEMENT:
-            console.log("CUSTOM_ELEMENT case: pending =", JSON.stringify(p.pending), ", char =", JSON.stringify(char), ", pending_with_char =", JSON.stringify(pending_with_char))
             if (pending_with_char.endsWith("££")) {
                 console.log("  -> Found closing ££, parsing content")
                 // Parse name::url from accumulated pending
