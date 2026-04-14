@@ -86,10 +86,14 @@ body {
 .prose :not(pre) > code {
     border-radius: 3px;
     color: var(--code);
+    background-color: var(--gray-1);
+    border: 1px solid var(--gray-2);
+    padding: 0.1em 0.4em;
+    font-size: 0.9em;
 }
 .prose :not(pre) > code::before,
 .prose :not(pre) > code::after {
-    content: "`";
+    content: "";
 }
 .prose pre {
     position: relative;

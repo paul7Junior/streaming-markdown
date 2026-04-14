@@ -2059,7 +2059,7 @@ test_single_write("Custom element",
         type: smd.Token.Paragraph,
         children: [{
             type: smd.Token.Custom_Element,
-            children: [],
+            children: ["example"],
             attrs: {
                 [smd.Attr.Href]: "https://example.com",
                 [smd.Attr.Name]: "example"
@@ -2076,7 +2076,7 @@ test_single_write("Custom element in paragraph",
             "Hello ",
             {
                 type: smd.Token.Custom_Element,
-                children: [],
+                children: ["world"],
                 attrs: {
                     [smd.Attr.Href]: "https://world.com",
                     [smd.Attr.Name]: "world"
